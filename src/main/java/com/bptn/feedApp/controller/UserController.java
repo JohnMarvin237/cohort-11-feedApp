@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.bptn.feedApp.jdbc.UserBean;
+import com.bptn.feedApp.jpa.Profile;
 import com.bptn.feedApp.jpa.User;
 import com.bptn.feedApp.service.UserService;
 
@@ -141,6 +142,14 @@ public class UserController {
 	    logger.debug("Updating User Data");
 	        
 	    return this.userService.updateUser(user);
+	}
+	
+	@PostMapping("/update/profile")
+	public User updateUserProfile(@RequestBody Profile profile) {
+	        
+	    logger.debug("Updating User Profile Data, Profile: {}", profile.toString());
+	        
+	    return this.userService.updateUserProfile(profile);
 	}
 	
 }
