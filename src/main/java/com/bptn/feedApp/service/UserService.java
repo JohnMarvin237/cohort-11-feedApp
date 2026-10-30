@@ -1,31 +1,34 @@
 package com.bptn.feedApp.service;
 
-import com.bptn.feedApp.repository.UserRepository;
-import com.bptn.feedApp.jpa.User;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Service;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import com.bptn.feedApp.exception.domain.EmailExistException;
-import com.bptn.feedApp.exception.domain.UsernameExistException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.core.context.SecurityContextHolder;
-import com.bptn.feedApp.exception.domain.UserNotFoundException;
-import com.bptn.feedApp.exception.domain.EmailNotVerifiedException;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import com.bptn.feedApp.exception.domain.EmailExistException;
+import com.bptn.feedApp.exception.domain.EmailNotVerifiedException;
+import com.bptn.feedApp.exception.domain.UserNotFoundException;
+import com.bptn.feedApp.exception.domain.UsernameExistException;
+import com.bptn.feedApp.jpa.User;
 import com.bptn.feedApp.provider.ResourceProvider;
+import com.bptn.feedApp.repository.UserRepository;
 import com.bptn.feedApp.security.JwtService;
-import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class UserService {
@@ -131,36 +134,73 @@ public class UserService {
 
 		return headers;
 	}
-	
+
 	public void sendResetPasswordEmail(String emailId) {
 
-		  Optional<User> opt = this.userRepository.findByEmailId(emailId);
+		Optional<User> opt = this.userRepository.findByEmailId(emailId);
 
-		  if (opt.isPresent()) {
-		    this.emailService.sendResetPasswordEmail(opt.get());
-		  } else {
-		    logger.debug("Email doesn't exist, {}", emailId);
-		  }
+		if (opt.isPresent()) {
+			this.emailService.sendResetPasswordEmail(opt.get());
+		} else {
+			logger.debug("Email doesn't exist, {}", emailId);
 		}
-	
+	}
+
 	public void resetPassword(String password) {
 
-	    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-	    User user = this.userRepository.findByUsername(username)
-	                .orElseThrow(() -> new UserNotFoundException(String.format("Username doesn't exist, %s",username)));
+		User user = this.userRepository.findByUsername(username)
+				.orElseThrow(() -> new UserNotFoundException(String.format("Username doesn't exist, %s", username)));
 
-	    user.setPassword(this.passwordEncoder.encode(password));
+		user.setPassword(this.passwordEncoder.encode(password));
 
-	    this.userRepository.save(user);
+		this.userRepository.save(user);
 	}
-	
+
 	public User getUser() {
 
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		/* Get User from the DB. */
+		return this.userRepository.findByUsername(username)
+				.orElseThrow(() -> new UserNotFoundException(String.format("Username doesn't exist, %s", username)));
+	}
+
+	private void updateValue(Supplier<String> getter, Consumer<String> setter) {
+
+		Optional.ofNullable(getter.get()).filter(StringUtils::hasText).map(String::trim).ifPresent(setter);
+	}
+
+	private void updatePassword(Supplier<String> getter, Consumer<String> setter) {
+
+		Optional.ofNullable(getter.get()).filter(StringUtils::hasText).map(this.passwordEncoder::encode)
+				.ifPresent(setter);
+	}
+
+	private User updateUser(User user, User currentUser) {
+
+		this.updateValue(user::getFirstName, currentUser::setFirstName);
+		this.updateValue(user::getLastName, currentUser::setLastName);
+		this.updateValue(user::getPhone, currentUser::setPhone);
+		this.updateValue(user::getEmailId, currentUser::setEmailId);
+		this.updatePassword(user::getPassword, currentUser::setPassword);
+
+		return this.userRepository.save(currentUser);
+	}
+	
+	public User updateUser(User user) {
+        
 	    String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-	    /* Get User from the DB. */
+	    /* Validates the new email if provided */
+	    this.userRepository.findByEmailId(user.getEmailId())
+	                            .filter(u->!u.getUsername().equals(username))
+	                            .ifPresent(u -> {throw new EmailExistException(String.format("Email already exists, %s", u.getEmailId()));});
+	        
+	    /* Get and Update User */   
 	    return this.userRepository.findByUsername(username)
-	.orElseThrow(() -> new UserNotFoundException(String.format("Username doesn't exist, %s",username)));
+	                            .map(currentUser -> this.updateUser(user, currentUser))
+	                            .orElseThrow(()-> new UserNotFoundException(String.format("Username doesn't exist, %s", username)));
 	}
 }

@@ -127,4 +127,12 @@ public class UserController {
 	    this.userService.resetPassword(json.get("password").asText());
 	}
 	
+	@GetMapping("/get")
+	public User getUser() {
+	      
+	   logger.debug("Getting User Data");
+	      
+	   return this.userService.getUser();
+	}
+	
 }
