@@ -31,6 +31,8 @@ public class Feed implements Serializable {
 	@Column(columnDefinition="TEXT")
 	private String picture;
 	
+	private String content;
+	
 	@Column(name="\"createdOn\"")
 	private Timestamp createdOn;
 	
@@ -60,6 +62,14 @@ public class Feed implements Serializable {
 	public void setPicture(String picture) {
 		this.picture = picture;
 	}
+	
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
 
 	public Timestamp getCreatedOn() {
 		return createdOn;
@@ -87,9 +97,8 @@ public class Feed implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Feed [feedId=" + feedId + ", picture=" + picture + ", createdOn=" + createdOn + ", user=" + user
-				+ ", feedMetaData=" + feedMetaData + "]";
-	}
-	
+		return "Feed [feedId=" + feedId + ", picture=" + picture + ", content=" + content + ", createdOn=" + createdOn
+				+ ", user=" + user + ", feedMetaData=" + feedMetaData + "]";
+	}	
 	
 }
