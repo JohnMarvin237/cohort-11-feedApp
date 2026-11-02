@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.bptn.feedApp.exception.domain.FeedNotFoundException;
 import com.bptn.feedApp.exception.domain.UserNotFoundException;
 import com.bptn.feedApp.jpa.Feed;
 import com.bptn.feedApp.jpa.User;
@@ -37,5 +38,11 @@ public class FeedService {
 	    feed.setCreatedOn(Timestamp.from(Instant.now()));
 
 	    return this.feedRepository.save(feed);
+	}
+	
+	public Feed getFeedById(int feedId) {
+
+	    return this.feedRepository.findById(feedId)
+	    .orElseThrow(() -> new FeedNotFoundException(String.format("Feed doesn't exist, %d", feedId)));
 	}
 }
