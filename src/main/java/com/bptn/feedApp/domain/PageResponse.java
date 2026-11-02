@@ -53,6 +53,4 @@ public class PageResponse<T> {
 	public void setContent(List<T> content) {
 		this.content = content;
 	}
-	
-	
 }
