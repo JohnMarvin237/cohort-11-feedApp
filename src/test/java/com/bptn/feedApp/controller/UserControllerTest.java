@@ -1,5 +1,6 @@
 package com.bptn.feedApp.controller;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,6 +38,7 @@ import com.bptn.feedApp.service.EmailService;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -197,6 +199,62 @@ public class UserControllerTest {
 				.andExpect(jsonPath("$.httpStatus", is("400 BAD_REQUEST")))
 				.andExpect(jsonPath("$.reason", is("BAD REQUEST")))
 				.andExpect(jsonPath("$.message", is(String.format("Username doesn't exist, %s", this.otherUsername))));
+
+	}
+	
+	@Test
+	@Order(6)
+	public void loginIntegrationTest() throws Exception {
+	        
+	    /* Create object to generate JSON */
+	    ObjectNode root = this.objectMapper.createObjectNode();
+	    root.put("username", this.user.getUsername());
+	    root.put("password", this.user.getPassword());
+	        
+	    /* Check the Rest End Point Response */
+	    this.mockMvc.perform(MockMvcRequestBuilders.post("/user/login")
+	                        .contentType(MediaType.APPLICATION_JSON)
+	                        .content(this.objectMapper.writeValueAsString(root)))
+	            .andExpect(header().exists(AUTHORIZATION))
+	            .andExpect(status().isOk())
+	            .andExpect(jsonPath("$.firstName", is(this.user.getFirstName())))
+	            .andExpect(jsonPath("$.lastName", is(this.user.getLastName())))
+	            .andExpect(jsonPath("$.username", is(this.user.getUsername())))
+	            .andExpect(jsonPath("$.phone", is(this.user.getPhone())))
+	            .andExpect(jsonPath("$.emailId", is(this.user.getEmailId())))
+	            .andExpect(jsonPath("$.emailVerified", is(true)));
+	}
+	
+	@Test
+	@Order(7)
+	public void loginEmailNotVerifiedIntegrationTest() throws Exception {
+	        
+	    /* Create object to generate JSON */
+	    ObjectNode root = this.objectMapper.createObjectNode();
+	    root.put("username", this.user.getUsername());
+	    root.put("password", this.user.getPassword());
+	                
+	    /* Check if the User exists */
+	    Optional<User> opt = this.userRepository.findByUsername(this.user.getUsername());
+	    assertTrue(opt.isPresent(), "User Should Exist");  
+	        
+	    /* Set user.emailVerified to false */
+	    opt.ifPresent(u -> {u.setEmailVerified(false);
+	                        this.userRepository.save(u);});
+	        
+	    /* Check the Rest End Point Response */
+	    this.mockMvc.perform(MockMvcRequestBuilders.post("/user/login")
+	                        .contentType(MediaType.APPLICATION_JSON)
+	                        .content(this.objectMapper.writeValueAsString(root)))
+	                .andExpect(status().is4xxClientError())
+	                .andExpect(jsonPath("$.httpStatusCode", is(400)))
+	                .andExpect(jsonPath("$.httpStatus", is("400 BAD_REQUEST")))
+	                .andExpect(jsonPath("$.reason", is("BAD REQUEST")))
+	                .andExpect(jsonPath("$.message", is(String.format("Email requires verification, %s", this.user.getEmailId()))));
+
+	    /* Check if the User exists */
+	    opt = this.userRepository.findByUsername(this.user.getUsername());
+	    assertTrue(opt.isPresent(), "User Should Exist");  
 
 	}
 }
