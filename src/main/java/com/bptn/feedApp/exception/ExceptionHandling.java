@@ -137,6 +137,17 @@ public class ExceptionHandling implements ErrorController {
 	    return this.createHttpResponse(BAD_REQUEST, ex.getMessage());
 	}
 	
+	@ExceptionHandler(ContentModerationException.class)
+	public ResponseEntity<HttpResponse> contentModerationException(ContentModerationException ex) {
+	    this.logger.debug(ex.getMessage());
+	    return this.createHttpResponse(BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<HttpResponse> illegalArgumentException(IllegalArgumentException ex) {
+	    return this.createHttpResponse(BAD_REQUEST, ex.getMessage());
+	}
+	
 	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
 	public ResponseEntity<HttpResponse> methodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
 	    HttpMethod supportedMethod = Objects.requireNonNull(ex.getSupportedHttpMethods()).iterator().next();

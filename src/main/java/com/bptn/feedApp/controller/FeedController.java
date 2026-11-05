@@ -3,6 +3,8 @@ package com.bptn.feedApp.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.bptn.feedApp.domain.PageResponse;
+import com.bptn.feedApp.exception.ContentModerationException;
 import com.bptn.feedApp.jpa.Feed;
 import com.bptn.feedApp.jpa.FeedMetaData;
 import com.bptn.feedApp.service.FeedService;
@@ -27,12 +30,20 @@ public class FeedController {
 
 	final Logger logger = LoggerFactory.getLogger(this.getClass());
 	
+//	@PostMapping
+//	public Feed createFeed(@RequestBody Feed feed) throws ContentModerationException {
+//	            
+//	    logger.debug("Creating Feed");
+//	            
+//	    return this.feedService.createFeed(feed);
+//	}
+	
 	@PostMapping
-	public Feed createFeed(@RequestBody Feed feed) {
-	            
-	    logger.debug("Creating Feed");
-	            
-	    return this.feedService.createFeed(feed);
+	public ResponseEntity<Feed> createFeed(@RequestBody Feed feed) throws ContentModerationException {
+
+	    this.logger.debug("Creating Feed");
+
+	    return new ResponseEntity<>(this.feedService.createFeed(feed), HttpStatus.CREATED);
 	}
 	
 	@GetMapping("/{feedId}")
